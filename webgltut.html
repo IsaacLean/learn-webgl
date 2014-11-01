@@ -3,44 +3,48 @@
 <head>
 	<title>WebGL Tutorial</title>
 	<script src="lib/glMatrix-0.9.5.min.js"></script>
+	<!--these shaders are technically written in GLSL not JS-->
 	<script id="shader-fs" type="x-shader/x-fragment">
-	    precision mediump float;
+	    precision mediump float; //obligatory boilerplate code that tells GPU how precise we want to be with floats. medium precision (mediump) is good because it's required to be supported by all WebGL devices, high precision (highp) doesn't work on all mobile devices
 
 	    void main(void) {
-	        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+	        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0); //everything that is drawn will be in white
 	    }
 	</script>
 	<script id="shader-vs" type="x-shader/x-vertex">
-	    attribute vec3 aVertexPosition;
+	    attribute vec3 aVertexPosition; //shader is called for every vertex and the vertex is passed in to the shader as this variable thanks to the use of vertexPositionAttribute in the drawScene
 
+	    //uniform variables can be accessed from outside the shader
 	    uniform mat4 uMVMatrix;
 	    uniform mat4 uPMatrix;
 
 	    void main(void) {
-	        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+	        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0); //multiplies vertex position with model-view and projection matrices and pushes out the result as the final position of the vertex
 	    }
 	</script>
 	<script>
 		var gl;
 	    function initGL(canvas) {
 	        try {
-	            gl = canvas.getContext("experimental-webgl");
+	            gl = canvas.getContext('experimental-webgl'); //gets WebGL context
+	            //JS allows us to set any property we like on any object, so we will store canvas width and height for viewport/perspective later
 	            gl.viewportWidth = canvas.width;
 	            gl.viewportHeight = canvas.height;
 	        } catch (e) {
 	        }
 	        if (!gl) {
-	            alert("Could not initialise WebGL, sorry :-(");
+	            alert('Could not initialise WebGL, sorry :(');
 	        }
 	    }
 
+	    //create fragment or vertex shader based on type and pass off to WebGL to be compiled into a form that runs on GPU
 	    function getShader(gl, id) {
 	        var shaderScript = document.getElementById(id);
 	        if (!shaderScript) {
 	            return null;
 	        }
 
-	        var str = "";
+	        var str = '';
 	        var k = shaderScript.firstChild;
 	        while (k) {
 	            if (k.nodeType == 3) {
@@ -50,9 +54,9 @@
 	        }
 
 	        var shader;
-	        if (shaderScript.type == "x-shader/x-fragment") {
+	        if (shaderScript.type == 'x-shader/x-fragment') {
 	            shader = gl.createShader(gl.FRAGMENT_SHADER);
-	        } else if (shaderScript.type == "x-shader/x-vertex") {
+	        } else if (shaderScript.type == 'x-shader/x-vertex') {
 	            shader = gl.createShader(gl.VERTEX_SHADER);
 	        } else {
 	            return null;
@@ -71,29 +75,31 @@
 
 	    var shaderProgram;
 	    function initShaders() {
-	        var fragmentShader = getShader(gl, "shader-fs");
-	        var vertexShader = getShader(gl, "shader-vs");
+	        var fragmentShader = getShader(gl, 'shader-fs'); //get fragment shader
+	        var vertexShader = getShader(gl, 'shader-vs'); //get vertex shader
 
-	        shaderProgram = gl.createProgram();
+	        shaderProgram = gl.createProgram(); //program is code that lives on the WebGL side of system which runs on the GPU
 	        gl.attachShader(shaderProgram, vertexShader);
 	        gl.attachShader(shaderProgram, fragmentShader);
 	        gl.linkProgram(shaderProgram);
 
 	        if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-	            alert("Could not initialise shaders");
+	            alert('Could not initialise shaders');
 	        }
 
 	        gl.useProgram(shaderProgram);
 
-	        shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
-	        gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+	        shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, 'aVertexPosition');
+	        gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute); //tells WebGL we will want to provide values for the attribute using an array
 
-	        shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
-	        shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
+	        //store locations of uniform variables on program object for convenience
+	        shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, 'uPMatrix');
+	        shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, 'uMVMatrix');
 	    }
 
-	    var mvMatrix = mat4.create();
-	    var pMatrix = mat4.create();
+	    //moves model-view and projection matrices up from JS to WebGL by using references to the uniforms
+	    var mvMatrix = mat4.create(); //set model-view matrix to all-zero matrices
+	    var pMatrix = mat4.create(); //set projection matrix to all-zero matrices. project matrix stores how the program makes things proportionally smaller when they are farther away. populated by mat4.perspective().
 	    function setMatrixUniforms() {
 	        gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
 	        gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
@@ -110,13 +116,13 @@
 			]; //define the vertex positions as a list, this is an isosceles triangle with its center at (0, 0, 0)
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW); //create a Float32Array object based on list and tell WebGL to use it to fill the current buffer
 			triangleVertexPositionBuffer.itemSize = 3; //each item is made up of 3 numbers
-			triangleVertexPositionBuffer.numItems = 3; ///9-element buffer represents 3 separate vertex positions
+			triangleVertexPositionBuffer.numItems = 3; //9-element buffer represents 3 separate vertex positions
 		}
 
 		function drawScene() {
 			gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight); //tell WebGL size of canvas
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); //clear the canvas in preparation for drawing on it
-			mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100, pMatrix); //makes things further away look smaller by telling WebGL the perspective we're using: vertical FOV 45 degrees, width-to-height ratio of our canvas, we don't want to see things closer than 0.1 units to our viewpoint, we don't want to see things that are away than 100 units
+			mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100, pMatrix); //makes things further away look smaller by telling WebGL the perspective we're using: vertical FOV 45 degrees, width-to-height ratio of our canvas, we don't want to see things closer than 0.1 units to our viewpoint, we don't want to see things that are away than 100 units. populate pMatrix with this data.
 			mat4.identity(mvMatrix); //sets "identity matrix" which represents a transformation that does nothing at all, the combined matrix of all transformations on top of identity matrix is the "model-view matrix", basically we moved to an origin point from which we can move to start drawing the world
 
 			mat4.translate(mvMatrix, [-1.5, 0, -7]); //start triangle by moving 1.5 units to left and 7 units into scene
