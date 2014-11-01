@@ -3,6 +3,7 @@
 <head>
 	<title>WebGL Tutorial</title>
 	<script src="lib/glMatrix-0.9.5.min.js"></script>
+	<script src="lib/webgl-utils.js"></script>
 	<!--these shaders are technically written in GLSL not JS-->
 	<script id="shader-fs" type="x-shader/x-fragment">
 	    precision mediump float; //obligatory boilerplate code that tells GPU how precise we want to be with floats. medium precision (mediump) is good because it's required to be supported by all WebGL devices, high precision (highp) doesn't work on all mobile devices
@@ -108,12 +109,32 @@
 	        shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, 'uMVMatrix');
 	    }
 
-	    //moves model-view and projection matrices up from JS to WebGL by using references to the uniforms
 	    var mvMatrix = mat4.create(); //set model-view matrix to all-zero matrices
+	    var mvMatrixStack = []; //stack to hold list of matrices
 	    var pMatrix = mat4.create(); //set projection matrix to all-zero matrices. project matrix stores how the program makes things proportionally smaller when they are farther away. populated by mat4.perspective().
+
+	    function mvPushMatrix() {
+	    	var copy = mat4.create();
+	    	mat4.set(mvMatrix, copy);
+	    	mvMatrixStack.push(copy);
+	    }
+
+	    function mvPopMatrix() {
+	    	if(mvMatrixStack.length == 0) {
+	    		throw 'Invalid popMatrix!';
+	    	}
+	    	mvMatrix = mvMatrixStack.pop();
+	    }
+
+	    //moves model-view and projection matrices up from JS to WebGL by using references to the uniforms
 	    function setMatrixUniforms() {
 	        gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
 	        gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
+	    }
+
+	    //mat4.rotate() takes angles in radians so this is necessary if you are inputting your angles as degrees
+	    function degToRad(degrees) {
+	    	return degrees * Math.PI / 180;
 	    }
 
 	    //create global variable to hold buffers
@@ -166,6 +187,8 @@
 			squareVertexColorBuffer.numItems = 4;
 		}
 
+		var rTri = 0; //keeps track of rotation of triangle (starts at 0 deg)
+		var rSquare = 0; //keeps track of rotation of square (starts at 0 deg)
 		function drawScene() {
 			gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight); //tell WebGL size of canvas
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); //clear the canvas in preparation for drawing on it
@@ -174,21 +197,46 @@
 
 			//start drawing the triangle
 			mat4.translate(mvMatrix, [-1.5, 0, -7]); //start triangle by moving 1.5 units to left and 7 units into scene
+			mvPushMatrix();
+			mat4.rotate(mvMatrix, degToRad(rTri), [0, 1, 0]); //changing current rotation state as stored in model-view matrix and rotating by rTri degrees around vertical axis as specified by vector
 			gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
 			gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, triangleVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0); //values in buffer should be used for vertex positions
 			gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexColorBuffer);
 			gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, triangleVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
 			setMatrixUniforms(); //tells WebGL to take account for current model-view matrix. you can edit mvMatrix all you want, but this happens in JS's private space. this function moves it over to the GPU.
 			gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPositionBuffer.numItems); //draw array of vertices starting with 0 in array to the "numItems"th element, WebGL will now draw triangle
+			mvPopMatrix();
 
 			//next draw the square
 			mat4.translate(mvMatrix, [3, 0, 0]);
+			mvPushMatrix();
+			mat4.rotate(mvMatrix, degToRad(rSquare), [1, 0, 0]);
 			gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexPositionBuffer);
 			gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, squareVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
 			gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexColorBuffer);
 			gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, squareVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
 			setMatrixUniforms();
 			gl.drawArrays(gl.TRIANGLE_STRIP, 0, squareVertexPositionBuffer.numItems); //gl.TRIANGLE_STRIP: first triangle uses three vertices, next triangle uses last two vertices from previous triangle and next unused vertex, next triangle etc...
+			mvPopMatrix();
+		}
+
+		//change values of rTri and rSquare overtime
+		var lastTime = 0;
+		function animate() {
+			var timeNow = new Date().getTime();
+			if(lastTime != 0) {
+				var elapsed = timeNow - lastTime;
+
+				rTri += (90 * elapsed) / 1000;
+				rSquare += (75 * elapsed) / 1000;
+			}
+			lastTime = timeNow;
+		}
+
+		function tick() {
+			requestAnimFrame(tick); //schedule tick to be called again next time browser wants frame to be painted
+			drawScene(); //draw this frame
+			animate(); //update our state for the next
 		}
 
 		function webGLStart() {
@@ -200,7 +248,7 @@
 			gl.clearColor(0, 0, 0, 1); //make canvas black
 			gl.enable(gl.DEPTH_TEST); //do depth testing so things drawn behind other things should be hidden by things in front of them
 
-			drawScene(); //draws triangle using the buffers
+			tick();
 		}
 	</script>
 	<style>
