@@ -175,7 +175,7 @@
 			//start drawing the triangle
 			mat4.translate(mvMatrix, [-1.5, 0, -7]); //start triangle by moving 1.5 units to left and 7 units into scene
 			gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
-			gl.vertexAttribPointer(shaderProgram.triangleVertexPositionAttribute, triangleVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0); //values in buffer should be used for vertex positions
+			gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, triangleVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0); //values in buffer should be used for vertex positions
 			gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexColorBuffer);
 			gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, triangleVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
 			setMatrixUniforms(); //tells WebGL to take account for current model-view matrix. you can edit mvMatrix all you want, but this happens in JS's private space. this function moves it over to the GPU.
