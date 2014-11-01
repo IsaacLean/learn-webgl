@@ -7,19 +7,26 @@
 	<script id="shader-fs" type="x-shader/x-fragment">
 	    precision mediump float; //obligatory boilerplate code that tells GPU how precise we want to be with floats. medium precision (mediump) is good because it's required to be supported by all WebGL devices, high precision (highp) doesn't work on all mobile devices
 
+	    varying vec4 vColor;
+
 	    void main(void) {
-	        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0); //everything that is drawn will be in white
+	        gl_FragColor = vColor;
 	    }
 	</script>
 	<script id="shader-vs" type="x-shader/x-vertex">
+		//these two attributes are inputs that vary from vertex to vertex
 	    attribute vec3 aVertexPosition; //shader is called for every vertex and the vertex is passed in to the shader as this variable thanks to the use of vertexPositionAttribute in the drawScene
+	    attribute vec4 aVertexColor;
 
-	    //uniform variables can be accessed from outside the shader
+	    //uniform variables can be accessed from outside the shader, they are non-varying
 	    uniform mat4 uMVMatrix;
 	    uniform mat4 uPMatrix;
 
+	    varying vec4 vColor; //output in the form of varying variable
+
 	    void main(void) {
 	        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0); //multiplies vertex position with model-view and projection matrices and pushes out the result as the final position of the vertex
+	        vColor = aVertexColor; //pass color straight through from the input attribute to the output varying variable
 	    }
 	</script>
 	<script>
@@ -92,6 +99,10 @@
 	        shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, 'aVertexPosition');
 	        gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute); //tells WebGL we will want to provide values for the attribute using an array
 
+	        //get attribute locations which is how we get a reference to the attributes that we want to pass to the vertex shader for each vertex
+	        shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, 'aVertexColor');
+	        gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
+
 	        //store locations of uniform variables on program object for convenience
 	        shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, 'uPMatrix');
 	        shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, 'uMVMatrix');
@@ -107,7 +118,9 @@
 
 	    //create global variable to hold buffers
 	    var triangleVertexPositionBuffer;
+	    var triangleVertexColorBuffer;
 	    var squareVertexPositionBuffer;
+	    var squareVertexColorBuffer;
 		function initBuffers() {
 			triangleVertexPositionBuffer = gl.createBuffer(); //create a buffer for vertex positions
 			gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer); //any following operations that act on buffers should use the one we specify
@@ -119,6 +132,16 @@
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW); //create a Float32Array object based on list and tell WebGL to use it to fill the current buffer
 			triangleVertexPositionBuffer.itemSize = 3; //each item is made up of 3 numbers
 			triangleVertexPositionBuffer.numItems = 3; //9-element buffer represents 3 separate vertex positions
+			triangleVertexColorBuffer = gl.createBuffer();
+			gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexColorBuffer);
+			var colors = [
+				1, 0, 0, 1,
+				0, 1, 0, 1,
+				0, 0, 1, 1
+			];
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+			triangleVertexColorBuffer.itemSize = 4;
+			triangleVertexColorBuffer.numItems = 3;
 
 			//setup buffer for square
 			squareVertexPositionBuffer = gl.createBuffer();
@@ -132,6 +155,15 @@
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
 			squareVertexPositionBuffer.itemSize = 3;
 			squareVertexPositionBuffer.numItems = 4;
+			squareVertexColorBuffer = gl.createBuffer();
+			gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexColorBuffer);
+			colors = [];
+			for(var i = 0; i < 4; ++i) {
+				colors = colors.concat([0.5, 0.5, 1, 1]);
+			}
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+			squareVertexColorBuffer.itemSize = 4;
+			squareVertexColorBuffer.numItems = 4;
 		}
 
 		function drawScene() {
@@ -142,8 +174,10 @@
 
 			//start drawing the triangle
 			mat4.translate(mvMatrix, [-1.5, 0, -7]); //start triangle by moving 1.5 units to left and 7 units into scene
-			gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer); //redundant because we are drawing one item?
+			gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
 			gl.vertexAttribPointer(shaderProgram.triangleVertexPositionAttribute, triangleVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0); //values in buffer should be used for vertex positions
+			gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexColorBuffer);
+			gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, triangleVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
 			setMatrixUniforms(); //tells WebGL to take account for current model-view matrix. you can edit mvMatrix all you want, but this happens in JS's private space. this function moves it over to the GPU.
 			gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPositionBuffer.numItems); //draw array of vertices starting with 0 in array to the "numItems"th element, WebGL will now draw triangle
 
@@ -151,6 +185,8 @@
 			mat4.translate(mvMatrix, [3, 0, 0]);
 			gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexPositionBuffer);
 			gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, squareVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+			gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexColorBuffer);
+			gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, squareVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
 			setMatrixUniforms();
 			gl.drawArrays(gl.TRIANGLE_STRIP, 0, squareVertexPositionBuffer.numItems); //gl.TRIANGLE_STRIP: first triangle uses three vertices, next triangle uses last two vertices from previous triangle and next unused vertex, next triangle etc...
 		}
