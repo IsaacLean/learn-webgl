@@ -166,7 +166,7 @@
 			];
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW); //create a Float32Array object based on list and tell WebGL to use it to fill the current buffer
 			pyramidVertexPositionBuffer.itemSize = 3; //each item is made up of 3 numbers
-			pyramidVertexPositionBuffer.numItems = 12; //9-element buffer represents 3 separate vertex positions
+			pyramidVertexPositionBuffer.numItems = 12;
 			pyramidVertexColorBuffer = gl.createBuffer();
 			gl.bindBuffer(gl.ARRAY_BUFFER, pyramidVertexColorBuffer);
 			var colors = [
