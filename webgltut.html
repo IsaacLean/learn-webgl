@@ -105,7 +105,9 @@
 	        gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
 	    }
 
-	    var triangleVertexPositionBuffer; //create global variable to hold buffer
+	    //create global variable to hold buffers
+	    var triangleVertexPositionBuffer;
+	    var squareVertexPositionBuffer;
 		function initBuffers() {
 			triangleVertexPositionBuffer = gl.createBuffer(); //create a buffer for vertex positions
 			gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer); //any following operations that act on buffers should use the one we specify
@@ -117,6 +119,19 @@
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW); //create a Float32Array object based on list and tell WebGL to use it to fill the current buffer
 			triangleVertexPositionBuffer.itemSize = 3; //each item is made up of 3 numbers
 			triangleVertexPositionBuffer.numItems = 3; //9-element buffer represents 3 separate vertex positions
+
+			//setup buffer for square
+			squareVertexPositionBuffer = gl.createBuffer();
+			gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexPositionBuffer);
+			vertices = [
+				1, 1, 0,
+				-1, 1, 0,
+				1, -1, 0,
+				-1, -1, 0
+			];
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+			squareVertexPositionBuffer.itemSize = 3;
+			squareVertexPositionBuffer.numItems = 4;
 		}
 
 		function drawScene() {
@@ -125,11 +140,19 @@
 			mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100, pMatrix); //makes things further away look smaller by telling WebGL the perspective we're using: vertical FOV 45 degrees, width-to-height ratio of our canvas, we don't want to see things closer than 0.1 units to our viewpoint, we don't want to see things that are away than 100 units. populate pMatrix with this data.
 			mat4.identity(mvMatrix); //sets "identity matrix" which represents a transformation that does nothing at all, the combined matrix of all transformations on top of identity matrix is the "model-view matrix", basically we moved to an origin point from which we can move to start drawing the world
 
+			//start drawing the triangle
 			mat4.translate(mvMatrix, [-1.5, 0, -7]); //start triangle by moving 1.5 units to left and 7 units into scene
-			//gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer); //redundant because we are drawing one item?
+			gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer); //redundant because we are drawing one item?
 			gl.vertexAttribPointer(shaderProgram.triangleVertexPositionAttribute, triangleVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0); //values in buffer should be used for vertex positions
 			setMatrixUniforms(); //tells WebGL to take account for current model-view matrix. you can edit mvMatrix all you want, but this happens in JS's private space. this function moves it over to the GPU.
 			gl.drawArrays(gl.TRIANGLES, 0, triangleVertexPositionBuffer.numItems); //draw array of vertices starting with 0 in array to the "numItems"th element, WebGL will now draw triangle
+
+			//next draw the square
+			mat4.translate(mvMatrix, [3, 0, 0]);
+			gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexPositionBuffer);
+			gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, squareVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+			setMatrixUniforms();
+			gl.drawArrays(gl.TRIANGLE_STRIP, 0, squareVertexPositionBuffer.numItems); //gl.TRIANGLE_STRIP: first triangle uses three vertices, next triangle uses last two vertices from previous triangle and next unused vertex, next triangle etc...
 		}
 
 		function webGLStart() {
