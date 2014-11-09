@@ -271,7 +271,12 @@
 		}
 
 		var rPyramid = 0; //keeps track of rotation of triangle (starts at 0 deg)
-		var rCube = 0; //keeps track of rotation of square (starts at 0 deg)
+		var x = 0;
+		var y = 0;
+		var z = -5;
+		var xRot = 0;
+		var yRot = 0;
+		var zRot = 0;
 		function drawScene() {
 			gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight); //tell WebGL size of canvas
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); //clear the canvas in preparation for drawing on it
@@ -291,9 +296,10 @@
 			mvPopMatrix();*/
 
 			//next draw the square
-			mat4.translate(mvMatrix, [0, 0, -5]);
-			mvPushMatrix();
-			mat4.rotate(mvMatrix, degToRad(rCube), [1, 1, 1]);
+			mat4.translate(mvMatrix, [x, y, z]);
+			mat4.rotate(mvMatrix, degToRad(xRot), [1, 0, 0]);
+			mat4.rotate(mvMatrix, degToRad(yRot), [0, 1, 0]);
+			mat4.rotate(mvMatrix, degToRad(zRot), [0, 0, 1]);
 			gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
 			gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, cubeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
 			gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexColorBuffer);
@@ -301,7 +307,6 @@
 			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
 			setMatrixUniforms();
 			gl.drawElements(gl.TRIANGLES, cubeVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
-			mvPopMatrix();
 		}
 
 		//change values of rPyramid and rCube overtime
@@ -311,16 +316,50 @@
 			if(lastTime != 0) {
 				var elapsed = timeNow - lastTime;
 
-				rPyramid += (90 * elapsed) / 1000;
-				rCube -= (75 * elapsed) / 1000;
+				xRot += (90 * elapsed) / 1000;
+				yRot += (90 * elapsed) / 1000;
+				zRot += (90 * elapsed) / 1000;
 			}
 			lastTime = timeNow;
 		}
 
 		function tick() {
 			requestAnimFrame(tick); //schedule tick to be called again next time browser wants frame to be painted
+			handleKeys();
 			drawScene(); //draw this frame
 			animate(); //update our state for the next
+		}
+
+		var currentlyPressedKeys = {};
+		function handleKeyDown(evt) {
+			currentlyPressedKeys[evt.keyCode] = true;
+		}
+
+		function handleKeyUp(evt) {
+			currentlyPressedKeys[evt.keyCode] = false;
+		}
+
+		function handleKeys() {
+			//shift + w
+			if(currentlyPressedKeys[16] && currentlyPressedKeys[87]) {
+				z -= 0.05;
+			} else if(currentlyPressedKeys[87]) { //w
+				y += 0.05;
+			}
+			//shift + s
+			if(currentlyPressedKeys[16] && currentlyPressedKeys[83]) {
+				z += 0.05;
+			} else if(currentlyPressedKeys[83]) { //s
+				y -= 0.05;
+			}
+			//a
+			if(currentlyPressedKeys[65]) {
+				x -= 0.05;
+			}
+			//d
+			if(currentlyPressedKeys[68]) {
+				x += 0.05;
+			}
 		}
 
 		function webGLStart() {
@@ -331,6 +370,9 @@
 
 			gl.clearColor(0, 0, 0, 1); //make canvas black
 			gl.enable(gl.DEPTH_TEST); //do depth testing so things drawn behind other things should be hidden by things in front of them
+
+			document.onkeyup = handleKeyUp;
+			document.onkeydown = handleKeyDown;
 
 			tick();
 		}
