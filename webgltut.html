@@ -277,6 +277,8 @@
 		var xRot = 0;
 		var yRot = 0;
 		var zRot = 0;
+		var xSpeed = 90;
+		var ySpeed = 90;
 		function drawScene() {
 			gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight); //tell WebGL size of canvas
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); //clear the canvas in preparation for drawing on it
@@ -316,8 +318,8 @@
 			if(lastTime != 0) {
 				var elapsed = timeNow - lastTime;
 
-				xRot += (90 * elapsed) / 1000;
-				yRot += (90 * elapsed) / 1000;
+				xRot += (xSpeed * elapsed) / 1000;
+				yRot += (ySpeed * elapsed) / 1000;
 				zRot += (90 * elapsed) / 1000;
 			}
 			lastTime = timeNow;
@@ -360,6 +362,22 @@
 			if(currentlyPressedKeys[68]) {
 				x += 0.05;
 			}
+			if (currentlyPressedKeys[37]) {
+		      // Left arrow
+		      ySpeed -= 1;
+		    }
+		    if (currentlyPressedKeys[39]) {
+		      // Right arrow
+		      ySpeed += 1;
+		    }
+		    if (currentlyPressedKeys[38]) {
+		      // Up arrow
+		      xSpeed -= 1;
+		    }
+		    if (currentlyPressedKeys[40]) {
+		      // Down arrow
+		      xSpeed += 1;
+		    }
 		}
 
 		function webGLStart() {
