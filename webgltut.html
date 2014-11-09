@@ -138,13 +138,13 @@
 	    }
 
 	    //create global variable to hold buffers
-	    var pyramidVertexPositionBuffer;
-	    var pyramidVertexColorBuffer;
+	    /*var pyramidVertexPositionBuffer;
+	    var pyramidVertexColorBuffer;*/
 	    var cubeVertexPositionBuffer;
 	    var cubeVertexColorBuffer;
 	    var cubeVertexIndexBuffer;
 		function initBuffers() {
-			pyramidVertexPositionBuffer = gl.createBuffer(); //create a buffer for vertex positions
+			/*pyramidVertexPositionBuffer = gl.createBuffer(); //create a buffer for vertex positions
 			gl.bindBuffer(gl.ARRAY_BUFFER, pyramidVertexPositionBuffer); //any following operations that act on buffers should use the one we specify
 			var vertices = [
 				// Front face
@@ -189,7 +189,7 @@
 			];
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
 			pyramidVertexColorBuffer.itemSize = 4;
-			pyramidVertexColorBuffer.numItems = 12;
+			pyramidVertexColorBuffer.numItems = 12;*/
 
 			//setup buffer for square
 			cubeVertexPositionBuffer = gl.createBuffer();
@@ -278,7 +278,7 @@
 			mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100, pMatrix); //makes things further away look smaller by telling WebGL the perspective we're using: vertical FOV 45 degrees, width-to-height ratio of our canvas, we don't want to see things closer than 0.1 units to our viewpoint, we don't want to see things that are away than 100 units. populate pMatrix with this data.
 			mat4.identity(mvMatrix); //sets "identity matrix" which represents a transformation that does nothing at all, the combined matrix of all transformations on top of identity matrix is the "model-view matrix", basically we moved to an origin point from which we can move to start drawing the world
 
-			//start drawing the triangle
+			/*//start drawing the triangle
 			mat4.translate(mvMatrix, [-1.5, 0, -7]); //start triangle by moving 1.5 units to left and 7 units into scene
 			mvPushMatrix();
 			mat4.rotate(mvMatrix, degToRad(rPyramid), [0, 1, 0]); //changing current rotation state as stored in model-view matrix and rotating by rPyramid degrees around vertical axis as specified by vector
@@ -288,10 +288,10 @@
 			gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, pyramidVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
 			setMatrixUniforms(); //tells WebGL to take account for current model-view matrix. you can edit mvMatrix all you want, but this happens in JS's private space. this function moves it over to the GPU.
 			gl.drawArrays(gl.TRIANGLES, 0, pyramidVertexPositionBuffer.numItems); //draw array of vertices starting with 0 in array to the "numItems"th element, WebGL will now draw triangle
-			mvPopMatrix();
+			mvPopMatrix();*/
 
 			//next draw the square
-			mat4.translate(mvMatrix, [3, 0, 0]);
+			mat4.translate(mvMatrix, [0, 0, -5]);
 			mvPushMatrix();
 			mat4.rotate(mvMatrix, degToRad(rCube), [1, 1, 1]);
 			gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
